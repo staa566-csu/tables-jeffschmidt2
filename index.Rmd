@@ -1,0 +1,77 @@
+---
+title: "index"
+author: "Jeffrey Schmidt"
+date: "2022-10-12"
+output: html_document
+---
+
+**Assignment 4 - Tables**
+
+Make a dynamic figure. Describe the following:
+
+Source: https://apps.bea.gov/iTable/index_regional.cfm
+
+This data was sourced from the Bureau of Economic Analysis and looks to understand the trends in personal income per capita across the 50 states and Washington DC. 
+
+The data has been tabled in two ways. The first leverages KableExtra and serves as a brief snapshot of the actual for 2020 and the percent change vs. 2019. This features a lightbar scroll option, and is meant to be taken in quickly by the viewer.
+
+To further contextualize this, I created a second table using Reactable which allows for sorting by metric and additional information such as 2019 and 2016 actuals and percent change vs. 2016. In short the first table is to be used as a point in time for short-term trends, while the second allows us to manipulate the data and understand both the short and long-term trends quickly with our sorting function. 
+
+**Step 1: Load Packages**
+
+```{r}
+library(kableExtra)
+library(tidyverse)
+library(dplyr)
+library(sparkline)
+library(reactable)
+library(DT)
+```
+
+
+**Load and manipulate data**
+
+```{r}
+#load and mutate data
+econ <- read.csv("Regional - Level and Percent2.csv")
+
+eco1 <- econ %>%
+  filter(Description == "  Real per capita personal income 4/")%>%
+  mutate(p5y = ((X2020 - X2016)/X2016)*100)
+
+```
+
+**Create Table(s)**
+
+```{r}
+t_eco <- eco1 %>%
+  select(GeoName, Levels, Per_Change_2020)%>%
+  kbl(col.name = c("State/Region", "2020 Actuals", "Percent Change from 2019"),
+      align = c("l","r","r"),
+      digits = 1) %>% #check on this
+  kable_styling(font_size = 18, fixed_thead = T) %>%
+  add_header_above(c(" ","Real Per Capita Personal Income" = 2), font_size = 14) %>%
+  kable_paper(lightable_options = c("hover","condensed"), full_width = T, html_font = "helvetica", font_size = 12)
+
+t_eco 
+
+```
+
+
+```{r}
+t_reac <- eco1 %>%
+  select(GeoName,Levels, X2019, X2016, Per_Change_2020, p5y)%>%
+  reactable(columns = list(
+    GeoName = colDef(name = "State"),
+    Levels = colDef(name = "2020 Per Capita Income"),
+    X2019 = colDef(name = "2019 Per Capita Income"),
+    X2016 = colDef(name = "2016 Per Capita Income"),
+    Per_Change_2020 = colDef(name = "Percent Change from 2019", format = colFormat(digits = 1)),
+    p5y = colDef(name = "Percent Change from 2016", format = colFormat(digits = 1))),
+  defaultSorted="GeoName",
+  style = list(fontSize = "1rem"))
+t_reac 
+
+```
+
+
